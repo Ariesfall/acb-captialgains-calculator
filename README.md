@@ -1,4 +1,3 @@
-```
 # Excel Transactions
 
 This is a Go program that reads an Excel file containing transactions and calculates the Adjusted Cost Base and Capital Gains for each symbol.
