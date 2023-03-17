@@ -59,24 +59,24 @@ func Calculate(sheet [][]string) []byte {
 		log.Printf("%+v\n", *p)
 	}
 
-	result := writeResultJson(positions, transactions)
-	return result
+	result := summry(positions)
+	return writeResultJson(result)
 }
 
-func writeResultJson(positions map[string]*Position, transactions []*Transaction) []byte {
-	positionsJSON := []*Position{{Symbol: "Total"}}
+func summry(positions map[string]*Position) []*Position {
+	summry := []*Position{{Symbol: "Total"}}
 
 	for _, p := range positions {
-		positionsJSON = append(positionsJSON, p)
-		positionsJSON[0].Qty += p.Qty
-		positionsJSON[0].ACB += p.ACB
-		positionsJSON[0].CG += p.CG
-		positionsJSON[0].TACB += p.TACB
-		positionsJSON[0].TPCD += p.TPCD
-		positionsJSON[0].TCOM += p.TCOM
+		summry = append(summry, p)
+		summry[0].Qty += p.Qty
+		summry[0].ACB += p.ACB
+		summry[0].CG += p.CG
+		summry[0].TACB += p.TACB
+		summry[0].TPCD += p.TPCD
+		summry[0].TCOM += p.TCOM
 	}
 
-	for _, pj := range positionsJSON {
+	for _, pj := range summry {
 		pj.ACB = math.Round(pj.ACB*100) / 100
 		pj.CG = math.Round(pj.CG*100) / 100
 		pj.TACB = math.Round((pj.TACB-pj.ACB)*100) / 100
@@ -84,7 +84,11 @@ func writeResultJson(positions map[string]*Position, transactions []*Transaction
 		pj.TCOM = math.Round(pj.TCOM*100) / 100
 	}
 
-	positionsJSONBytes, err := json.Marshal(positionsJSON)
+	return summry
+}
+
+func writeResultJson(positions []*Position) []byte {
+	positionsJSONBytes, err := json.Marshal(positions)
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -93,24 +97,22 @@ func writeResultJson(positions map[string]*Position, transactions []*Transaction
 	return positionsJSONBytes
 }
 
-// func writeResultCSVFile(positions map[string]*Position, transactions []*Transaction) *csv.Writer {
-// 	f, err := os.Create("output.csv")
-// 	if err != nil {
-// 		log.Println(err)
-// 		return nil
-// 	}
-// 	defer f.Close()
+// func writeResultCSVFile(positions []*Position) ([]byte, error) {
+// 	var buf bytes.Buffer
+// 	w := csv.NewWriter(&buf)
 
-// 	w := csv.NewWriter(f)
-// 	defer w.Flush()
-
-// 	w.Write([]string{"Symbol", "Qty", "ACB", "Capital Gains"})
+// 	w.Write([]string{"Symbol", "Qty", "ACB", "Capital Gains", "Proceeds ACB", "Proceeds", "Commision"})
 
 // 	for _, p := range positions {
-// 		w.Write([]string{p.Symbol, strconv.Itoa(p.Qty), fmt.Sprintf("%.2f", p.ACB), fmt.Sprintf("%.2f", p.CG)})
+// 		w.Write([]string{p.Symbol, strconv.Itoa(p.Qty), fmt.Sprintf("%.2f", p.ACB), fmt.Sprintf("%.2f", p.CG), fmt.Sprintf("%.2f", p.TACB), fmt.Sprintf("%.2f", p.TPCD), fmt.Sprintf("%.2f", p.TCOM)})
 // 	}
 
-// 	return w
+// 	w.Flush()
+// 	if err := w.Error(); err != nil {
+// 		return nil, err
+// 	}
+
+// 	return buf.Bytes(), nil
 // }
 
 func readFile(sheet [][]string) ([]*Transaction, error) {
