@@ -23,6 +23,9 @@ type Position struct {
 	Qty    int     `json:"Qty"`
 	ACB    float64 `json:"ACB"`
 	CG     float64 `json:"Capital Gains"`
+	TACB   float64 `json:"Total Proceeds ACB"`
+	TPCD   float64 `json:"Total Proceeds"`
+	TCOM   float64 `json:"Total Commision"`
 }
 
 func Calculate(sheet [][]string) []byte {
@@ -41,15 +44,17 @@ func Calculate(sheet [][]string) []byte {
 			positions[t.Symbol] = p
 		}
 		// fmt.Println(t)
-
+		p.TCOM += t.Commission
 		if (p.Qty >= 0 && t.ShareQty > 0) || (p.Qty <= 0 && t.ShareQty < 0) {
 			p.ACB = (p.ACB + t.Proceeds + t.Commission)
 			p.Qty += t.ShareQty
+			p.TACB += t.Proceeds
 		} else {
 			// shareQtyAbs := math.Abs(float64(t.ShareQty))
 			p.CG = p.CG + (t.PricePerShare*float64(-t.ShareQty) - t.Commission - (p.ACB / float64(p.Qty) * float64(-t.ShareQty)))
 			p.ACB = p.ACB * (float64(p.Qty + t.ShareQty)) / float64(p.Qty)
 			p.Qty += t.ShareQty
+			p.TPCD += t.Proceeds
 		}
 		log.Printf("%+v\n", *p)
 	}
@@ -66,11 +71,17 @@ func writeResultJson(positions map[string]*Position, transactions []*Transaction
 		positionsJSON[0].Qty += p.Qty
 		positionsJSON[0].ACB += p.ACB
 		positionsJSON[0].CG += p.CG
+		positionsJSON[0].TACB += p.TACB
+		positionsJSON[0].TPCD += p.TPCD
+		positionsJSON[0].TCOM += p.TCOM
 	}
 
 	for _, pj := range positionsJSON {
 		pj.ACB = math.Round(pj.ACB*100) / 100
 		pj.CG = math.Round(pj.CG*100) / 100
+		pj.TACB = math.Round((pj.TACB-pj.ACB)*100) / 100
+		pj.TPCD = math.Round(pj.TPCD*100) / 100
+		pj.TCOM = math.Round(pj.TCOM*100) / 100
 	}
 
 	positionsJSONBytes, err := json.Marshal(positionsJSON)
